@@ -26,9 +26,31 @@ class Handler(FileSystemEventHandler):
         if ext not in self.ALLOWED_EXT:
             return
 
-        # run _add_video inside its own app context
+        full_path = event.src_path
+
+        # ─── wait for file to finish copying ───────────────────────────────
+        last_size = -1
+        stable_count = 0
+        while stable_count < 2:
+            try:
+                size = os.path.getsize(full_path)
+            except OSError:
+                # file not yet fully present
+                time.sleep(1)
+                continue
+
+            if size == last_size:
+                stable_count += 1
+            else:
+                stable_count = 0
+                last_size = size
+
+            time.sleep(1)
+        # ─────────────────────────────────────────────────────────────────────
+
+        # now safe to process
         with app.app_context():
-            self._add_video(event.src_path)
+            self._add_video(full_path)
 
     def on_deleted(self, event):
         if event.is_directory:
@@ -37,7 +59,6 @@ class Handler(FileSystemEventHandler):
         if ext not in self.ALLOWED_EXT:
             return
 
-        # run _remove_video inside its own app context
         with app.app_context():
             self._remove_video(event.src_path)
 
@@ -118,8 +139,10 @@ class Handler(FileSystemEventHandler):
         json_path = os.path.join(detect_folder, f"{os.path.splitext(filename)[0]}.json")
         if os.path.exists(json_path):
             try: os.remove(json_path)
-            except: pass
+            except OSError:
+                pass
 
+        # cascade delete Video + Detection rows
         db.session.delete(vid)
         db.session.commit()
         app.logger.info(f"[watcher] 🗑️ Removed DB records for '{filename}'")
@@ -130,7 +153,6 @@ if __name__ == "__main__":
     observer.schedule(handler, watch_folder, recursive=False)
     observer.start()
     app.logger.info(f"[watcher] Watching folder: {watch_folder}")
-
     try:
         while True:
             time.sleep(1)
