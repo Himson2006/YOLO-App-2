@@ -1,7 +1,7 @@
-# 1. Base image with Python
-FROM python:3.8-slim
+# 1. GPU-enabled base with CUDA & cuDNN
+FROM pytorch/pytorch:2.0.1-cuda11.7.1-cudnn8-runtime
 
-# 2. System packages for OpenCV, ffmpeg & psycopg2
+# 2. System packages for OpenCV, ffmpeg & PostgreSQL client libs
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
       libgl1-mesa-glx \
@@ -10,25 +10,26 @@ RUN apt-get update && \
       ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
-# 3. Set working dir
+# 3. Set working directory
 WORKDIR /usr/src/app
 
-# 4. Copy & install Python deps
+# 4. Copy & install Python dependencies
 COPY requirements.txt ./
 RUN pip install --upgrade pip \
  && pip install --no-cache-dir -r requirements.txt
 
-# 5. Copy app source
+# 5. Copy application code
 COPY . .
 
-# 6. Ensure uploads/incoming exists
-RUN mkdir -p app/uploads/incoming
+# 6. Ensure both incoming & detections folders exist
+RUN mkdir -p app/uploads/incoming \
+ && mkdir -p app/uploads/detections
 
-# 7. Expose port
+# 7. Expose Flask port
 EXPOSE 5000
 
-# 8. Entrypoint runs both watcher & Gunicorn
-#    NOTE: runtime env (DATABASE_URL, WATCH_FOLDER, etc.) comes from docker-compose.yml
+# 8. Entrypoint: run the watcher in background, then launch Gunicorn
+#    (all runtime env vars—DATABASE_URL, WATCH_FOLDER, etc.—come from docker-compose)
 CMD ["sh", "-c", "\
     python watcher.py & \
     gunicorn --bind 0.0.0.0:5000 run:app --workers 2 --threads 4 \

@@ -1,7 +1,7 @@
 import os
-import cv2
 import json
-from datetime import datetime
+import torch
+import cv2
 from ultralytics import YOLO
 
 def run_detection(
@@ -24,7 +24,7 @@ def run_detection(
     Optionally writes the filtered list to JSON (if write_json=True).
     """
     # resolve video filename for metadata & JSON path
-    if input_source == 0 or input_source.lower() == "webcam":
+    if input_source == 0 or str(input_source).lower() == "webcam":
         video_name = "webcam"
     else:
         base = os.path.basename(input_source)
@@ -37,11 +37,19 @@ def run_detection(
         os.makedirs(output_json_dir, exist_ok=True)
         json_path = os.path.join(output_json_dir, f"{video_name}.json")
 
-    # open capture and model
+    # open capture
     cap = cv2.VideoCapture(input_source)
     if not cap.isOpened():
         raise RuntimeError(f"Cannot open input {input_source!r}")
+
+    # load model
     model = YOLO(model_path)
+
+    # pick device and move model
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    model.model.to(device)
+    if device == "cuda":
+        torch.backends.cudnn.benchmark = True
 
     # 1) raw per-frame detections
     records = []
@@ -52,21 +60,27 @@ def run_detection(
             break
         frame_idx += 1
 
-        # inference
-        res = model(frame, conf=conf_thres, iou=iou_thres)[0]
+        # inference on chosen device, half‐precision if GPU
+        res = model(
+            frame,
+            device=device,
+            conf=conf_thres,
+            iou=iou_thres,
+            half=(device == "cuda")
+        )[0]
+
         dets = []
         for box, conf, cls in zip(res.boxes.xyxy, res.boxes.conf, res.boxes.cls):
-            conf_val = float(conf)
-            if conf_val < conf_thres:
+            cval = float(conf)
+            if cval < conf_thres:
                 continue
             x1, y1, x2, y2 = map(float, box)
             dets.append({
                 "bbox": [x1, y1, x2, y2],
-                "confidence": conf_val,
+                "confidence": cval,
                 "class_id": int(cls),
                 "class_name": model.names[int(cls)]
             })
-            # (optional) draw if you need cv2.imshow
 
         records.append({
             "frame": frame_idx,
