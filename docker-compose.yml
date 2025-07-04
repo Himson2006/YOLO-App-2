@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   db:
     image: postgres:13
@@ -18,12 +16,36 @@ services:
     depends_on:
       - db
     restart: always
-    env_file:
-      - .env
+    environment:
+      DATABASE_URL:      postgresql://yolo_user:yolo_pass@db:5432/yolo_db
+      FLASK_APP:         run.py
+      FLASK_ENV:         development
     ports:
       - "80:5000"
     volumes:
       - ./:/usr/src/app
+      - ./yolo_weights:/usr/src/app/yolo_weights
       - ./app/uploads:/usr/src/app/app/uploads
     command: ["flask", "run", "--host=0.0.0.0", "--port=5000"]
     working_dir: /usr/src/app
+    gpus: all
+
+  watcher:
+    build: .
+    depends_on:
+      - db
+    restart: always
+    environment:
+      DATABASE_URL:      postgresql://yolo_user:yolo_pass@db:5432/yolo_db
+      YOLO_MODEL_PATH:   /usr/src/app/yolo_weights/best.pt
+      WATCH_FOLDER:      /usr/src/app/app/uploads/incoming
+    volumes:
+      - ./:/usr/src/app
+      - ./yolo_weights:/usr/src/app/yolo_weights
+      - ./app/uploads:/usr/src/app/app/uploads
+    working_dir: /usr/src/app
+    command: ["python", "watcher.py"]
+    gpus: all
+
+volumes:
+  db_data:
