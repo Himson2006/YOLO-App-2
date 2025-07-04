@@ -1,5 +1,5 @@
 # 1. GPU-enabled base with CUDA & cuDNN
-FROM pytorch/pytorch:2.0.1-cuda11.7.1-cudnn8-runtime
+FROM pytorch/pytorch:2.0.1-cuda11.7-cudnn8-runtime
 
 # 2. System packages for OpenCV, ffmpeg & PostgreSQL client libs
 RUN apt-get update && \
