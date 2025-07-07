@@ -11,6 +11,7 @@
 </head>
 <body>
   <h1>Search Videos</h1>
+
   <form action="{{ url_for('main.search_videos') }}" method="get">
     <label>
       Class name:
@@ -28,34 +29,47 @@
       {% for video in videos %}
         <li class="video-item">
           <strong>{{ video.filename }}</strong>
+
+          <!-- Download link -->
+          <a href="{{ url_for('main.download_video', video_id=video.id) }}">
+            ⬇ Download
+          </a>
+
+          <!-- Play toggle button -->
           <button type="button"
-                  onclick="showVideo('{{ video.id }}')">
+                  onclick="toggleVideo('{{ video.id }}')">
             ▶ Play
           </button>
 
-          <video
-            id="video-{{ video.id }}"
-            class="video-player"
-            width="480"
-            controls
-            preload="none"
-          >
-            <source
-              src="{{ url_for('main.download_video', video_id=video.id) }}"
-              type="video/mp4"
+          <!-- Hidden video player -->
+          <div>
+            <video
+              id="video-{{ video.id }}"
+              class="video-player"
+              width="480"
+              controls
+              preload="none"
             >
-            Your browser does not support HTML5 video.
-          </video>
+              <source
+                src="{{ url_for('main.download_video', video_id=video.id) }}"
+                type="video/mp4"
+              >
+              Your browser does not support HTML5 video.
+            </video>
+          </div>
         </li>
       {% endfor %}
     </ul>
   {% else %}
-    <p><em>No videos found.</em></p>
+    {% if class_name %}
+      <p><em>No videos found for “{{ class_name }}”.</em></p>
+    {% endif %}
   {% endif %}
 
   <script>
-    function showVideo(id) {
+    function toggleVideo(id) {
       const vid = document.getElementById(`video-${id}`);
+      if (!vid) return;
       if (vid.style.display === 'none' || vid.style.display === '') {
         vid.style.display = 'block';
         vid.play();
