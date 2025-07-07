@@ -14,7 +14,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # Where uploaded videos live
-    UPLOAD_FOLDER = os.path.expanduser("~/Yolo-Gpu/remote_incoming")
+    UPLOAD_FOLDER = os.path.join(basedir, "remote_incoming")
     MAX_CONTENT_LENGTH = 5 * 1024 * 1024 * 1024  # 5 GB max
 
     # YOLO model path (override via env)
