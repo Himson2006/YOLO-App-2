@@ -14,7 +14,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # Where uploaded videos live
-    UPLOAD_FOLDER = os.path.join(basedir, "remote_incoming")
+    UPLOAD_FOLDER = os.path.join(basedir, "app", "uploads")
     MAX_CONTENT_LENGTH = 5 * 1024 * 1024 * 1024  # 5 GB max
 
     # YOLO model path (override via env)
@@ -23,7 +23,4 @@ class Config:
         os.path.join(basedir, "yolo_weights", "best.pt")
     )
     
-    WATCH_FOLDER = os.environ.get(
-        "WATCH_FOLDER",
-        os.path.join(UPLOAD_FOLDER, "incoming")
-    )
+    WATCH_FOLDER = os.path.join(basedir, "remote_incoming")
