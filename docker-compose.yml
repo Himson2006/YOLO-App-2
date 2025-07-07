@@ -25,6 +25,7 @@ services:
     volumes:
       - ./:/usr/src/app
       - ./app/uploads:/usr/src/app/app/uploads
+      - /home/imics/Yolo-Gpu/remote_incoming:/usr/src/app/remote_incoming
     command: ["flask", "run", "--host=0.0.0.0", "--port=5000"]
     working_dir: /usr/src/app
 
