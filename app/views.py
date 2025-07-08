@@ -57,7 +57,7 @@ def list_videos():
     results = [{"id": v.id, "filename": v.filename} for v in q.all()]
     return jsonify(results)
 
-@main_bp.route("/download/<int:video_id>", methods=["GET"])
+@main_bp.route("/remote_incoming/<int:video_id>", methods=["GET"])
 def download_video(video_id: int):
     video = Video.query.get_or_404(video_id)
     # serve out of the incoming/watch folder
